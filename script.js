@@ -1,16 +1,14 @@
 // =====================================================
-// MINDCARE - FRONTEND JAVASCRIPT
-// Render Production Version
+// MINDCARE
 // =====================================================
 
-// IMPORTANT:
-// Do NOT use localhost or 127.0.0.1 here.
-// This is your live Flask server.
-const API_URL = "https://mindcareweb-f2qa.onrender.com";
+// YOUR LIVE RENDER BACKEND
+const API_URL =
+    "https://mindcareweb-f2qa.onrender.com";
 
 
 // =====================================================
-// HELPER FUNCTION
+// API REQUEST
 // =====================================================
 
 async function apiRequest(endpoint, method = "GET", data = null) {
@@ -24,65 +22,119 @@ async function apiRequest(endpoint, method = "GET", data = null) {
             }
         };
 
+
         if (data !== null) {
-            options.body = JSON.stringify(data);
+
+            options.body =
+                JSON.stringify(data);
+
         }
 
-        const response = await fetch(
-            API_URL + endpoint,
-            options
-        );
 
-        const result = await response.json();
+        const response =
+            await fetch(
+                API_URL + endpoint,
+                options
+            );
+
+
+        let result;
+
+        try {
+
+            result =
+                await response.json();
+
+        }
+
+        catch (error) {
+
+            throw new Error(
+                "Server returned an invalid response."
+            );
+
+        }
+
 
         return result;
 
-    } catch (error) {
+    }
 
-        console.error("API Error:", error);
+    catch (error) {
 
-        throw new Error(
-            "Cannot connect to server."
+        console.error(
+            "Connection error:",
+            error
         );
-    }
-}
 
-
-// =====================================================
-// SHOW MESSAGE
-// =====================================================
-
-function showMessage(message, success = false) {
-
-    let messageElement =
-        document.getElementById("message");
-
-    if (!messageElement) {
-
-        messageElement =
-            document.querySelector(".message");
-
-    }
-
-    if (!messageElement) {
-
-        alert(message);
-        return;
-
-    }
-
-    messageElement.textContent = message;
-
-    if (success) {
-
-        messageElement.style.color = "green";
-
-    } else {
-
-        messageElement.style.color = "red";
+        throw error;
 
     }
 }
+
+
+
+// =====================================================
+// SHOW LOGIN
+// =====================================================
+
+function showLogin() {
+
+    document.getElementById(
+        "loginSection"
+    ).style.display = "block";
+
+
+    document.getElementById(
+        "registerSection"
+    ).style.display = "none";
+
+
+    clearMessages();
+
+}
+
+
+
+// =====================================================
+// SHOW REGISTER
+// =====================================================
+
+function showRegister() {
+
+    document.getElementById(
+        "loginSection"
+    ).style.display = "none";
+
+
+    document.getElementById(
+        "registerSection"
+    ).style.display = "block";
+
+
+    clearMessages();
+
+}
+
+
+
+// =====================================================
+// CLEAR MESSAGES
+// =====================================================
+
+function clearMessages() {
+
+    document.getElementById(
+        "loginMessage"
+    ).textContent = "";
+
+
+    document.getElementById(
+        "registerMessage"
+    ).textContent = "";
+
+}
+
 
 
 // =====================================================
@@ -91,87 +143,72 @@ function showMessage(message, success = false) {
 
 async function loginUser() {
 
-    const inputs =
-        document.querySelectorAll("input");
-
-    let usernameInput = null;
-    let passwordInput = null;
-
-    inputs.forEach(function (input) {
-
-        if (input.type === "password") {
-
-            passwordInput = input;
-
-        }
-
-        else if (
-            input.type === "text" ||
-            input.type === "email"
-        ) {
-
-            if (!usernameInput) {
-
-                usernameInput = input;
-
-            }
-
-        }
-
-    });
-
-
-    if (!usernameInput || !passwordInput) {
-
-        showMessage(
-            "Username or password field not found."
-        );
-
-        return;
-
-    }
-
-
     const username =
-        usernameInput.value.trim();
+        document.getElementById(
+            "loginUsername"
+        ).value.trim();
+
 
     const password =
-        passwordInput.value.trim();
+        document.getElementById(
+            "loginPassword"
+        ).value.trim();
 
 
-    if (username === "" || password === "") {
-
-        showMessage(
-            "Please enter username and password."
+    const message =
+        document.getElementById(
+            "loginMessage"
         );
+
+
+    // Check empty fields
+
+    if (
+        username === "" ||
+        password === ""
+    ) {
+
+        message.textContent =
+            "Please enter username and password.";
+
+        message.style.color = "red";
 
         return;
 
     }
+
+
+    message.textContent =
+        "Connecting to server...";
+
+    message.style.color =
+        "#1d6fa5";
 
 
     try {
 
-        showMessage("Logging in...");
+        const result =
+            await apiRequest(
+                "/login",
+                "POST",
+                {
+                    username: username,
+                    password: password
+                }
+            );
 
 
-        const result = await apiRequest(
-            "/login",
-            "POST",
-            {
-                username: username,
-                password: password
-            }
-        );
-
+        // LOGIN SUCCESS
 
         if (result.success) {
 
-            // Save logged-in user
             localStorage.setItem(
                 "mindcare_user",
-                JSON.stringify(result.user)
+                JSON.stringify(
+                    result.user
+                )
             );
+
 
             localStorage.setItem(
                 "user_id",
@@ -179,24 +216,34 @@ async function loginUser() {
             );
 
 
-            showMessage(
-                "Login successful.",
-                true
-            );
+            message.textContent =
+                "Login successful!";
+
+            message.style.color =
+                "green";
 
 
-            // Redirect to dashboard
+            /*
+             * If you already have dashboard.html,
+             * uncomment the next line.
+             */
+
             window.location.href =
                 "dashboard.html";
 
         }
 
+
+        // LOGIN FAILED
+
         else {
 
-            showMessage(
+            message.textContent =
                 result.message ||
-                "Invalid username or password."
-            );
+                "Invalid username or password.";
+
+            message.style.color =
+                "red";
 
         }
 
@@ -204,14 +251,18 @@ async function loginUser() {
 
     catch (error) {
 
-        showMessage(
-            "Cannot connect to server."
-        );
-
         console.error(error);
 
+        message.textContent =
+            "Cannot connect to server.";
+
+        message.style.color =
+            "red";
+
     }
+
 }
+
 
 
 // =====================================================
@@ -220,163 +271,177 @@ async function loginUser() {
 
 async function registerUser() {
 
-    const inputs =
-        document.querySelectorAll("input");
-
-    let username = "";
-    let password = "";
-    let name = "";
+    const name =
+        document.getElementById(
+            "registerName"
+        ).value.trim();
 
 
-    inputs.forEach(function (input) {
-
-        const value =
-            input.value.trim();
-
-        const placeholder =
-            (input.placeholder || "").toLowerCase();
-
-        const nameAttr =
-            (input.name || "").toLowerCase();
+    const username =
+        document.getElementById(
+            "registerUsername"
+        ).value.trim();
 
 
-        if (
-            placeholder.includes("username") ||
-            nameAttr === "username"
-        ) {
-
-            username = value;
-
-        }
-
-        else if (
-            input.type === "password" ||
-            placeholder.includes("password") ||
-            nameAttr === "password"
-        ) {
-
-            password = value;
-
-        }
-
-        else if (
-            placeholder.includes("name") ||
-            nameAttr === "name"
-        ) {
-
-            name = value;
-
-        }
-
-    });
+    const password =
+        document.getElementById(
+            "registerPassword"
+        ).value.trim();
 
 
-    if (name === "") {
-
-        const nameInput =
-            document.querySelector(
-                'input[name="name"]'
-            );
-
-        if (nameInput) {
-
-            name = nameInput.value.trim();
-
-        }
-
-    }
+    const confirmPassword =
+        document.getElementById(
+            "registerConfirmPassword"
+        ).value.trim();
 
 
-    if (username === "") {
-
-        const usernameInput =
-            document.querySelector(
-                'input[name="username"]'
-            );
-
-        if (usernameInput) {
-
-            username =
-                usernameInput.value.trim();
-
-        }
-
-    }
+    const message =
+        document.getElementById(
+            "registerMessage"
+        );
 
 
-    if (password === "") {
-
-        const passwordInput =
-            document.querySelector(
-                'input[name="password"]'
-            );
-
-        if (passwordInput) {
-
-            password =
-                passwordInput.value.trim();
-
-        }
-
-    }
-
+    // =========================================
+    // VALIDATION
+    // =========================================
 
     if (
+        name === "" ||
         username === "" ||
         password === "" ||
-        name === ""
+        confirmPassword === ""
     ) {
 
-        showMessage(
-            "Please fill all required fields."
-        );
+        message.textContent =
+            "Please fill all fields.";
+
+        message.style.color =
+            "red";
 
         return;
 
     }
 
 
+    if (password.length < 4) {
+
+        message.textContent =
+            "Password must contain at least 4 characters.";
+
+        message.style.color =
+            "red";
+
+        return;
+
+    }
+
+
+    if (
+        password !== confirmPassword
+    ) {
+
+        message.textContent =
+            "Passwords do not match.";
+
+        message.style.color =
+            "red";
+
+        return;
+
+    }
+
+
+    message.textContent =
+        "Creating account...";
+
+    message.style.color =
+        "#1d6fa5";
+
+
+    // =========================================
+    // SEND TO FLASK
+    // =========================================
+
     try {
-
-        showMessage(
-            "Creating account..."
-        );
-
 
         const result =
             await apiRequest(
                 "/register",
                 "POST",
                 {
+                    name: name,
                     username: username,
-                    password: password,
-                    name: name
+                    password: password
                 }
             );
 
 
+        // =====================================
+        // SUCCESS
+        // =====================================
+
         if (result.success) {
 
-            showMessage(
-                "Registration successful. Please login.",
-                true
+            message.textContent =
+                "Account created successfully!";
+
+            message.style.color =
+                "green";
+
+
+            // Clear fields
+
+            document.getElementById(
+                "registerName"
+            ).value = "";
+
+
+            document.getElementById(
+                "registerUsername"
+            ).value = "";
+
+
+            document.getElementById(
+                "registerPassword"
+            ).value = "";
+
+
+            document.getElementById(
+                "registerConfirmPassword"
+            ).value = "";
+
+
+            // Go back to login
+
+            setTimeout(
+                function () {
+
+                    showLogin();
+
+                    document.getElementById(
+                        "loginUsername"
+                    ).value =
+                        username;
+
+                },
+                1200
             );
-
-            setTimeout(function () {
-
-                window.location.href =
-                    "Index.html";
-
-            }, 1000);
 
         }
 
+
+        // =====================================
+        // REGISTRATION FAILED
+        // =====================================
+
         else {
 
-            showMessage(
+            message.textContent =
                 result.message ||
-                "Registration failed."
-            );
+                "Registration failed.";
+
+            message.style.color =
+                "red";
 
         }
 
@@ -384,66 +449,76 @@ async function registerUser() {
 
     catch (error) {
 
-        showMessage(
-            "Cannot connect to server."
-        );
-
         console.error(error);
 
+        message.textContent =
+            "Cannot connect to server.";
+
+        message.style.color =
+            "red";
+
     }
+
 }
 
 
+
 // =====================================================
-// GET CURRENT USER ID
+// LOGOUT
+// =====================================================
+
+function logout() {
+
+    localStorage.removeItem(
+        "mindcare_user"
+    );
+
+    localStorage.removeItem(
+        "user_id"
+    );
+
+
+    window.location.href =
+        "Index.html";
+
+}
+
+
+
+// =====================================================
+// GET USER ID
 // =====================================================
 
 function getUserId() {
 
-    const userId =
-        localStorage.getItem("user_id");
-
-    if (userId) {
-
-        return parseInt(userId);
-
-    }
+    const id =
+        localStorage.getItem(
+            "user_id"
+        );
 
 
-    const user =
-        localStorage.getItem("mindcare_user");
+    if (id) {
 
-    if (user) {
-
-        try {
-
-            const userData =
-                JSON.parse(user);
-
-            return userData.id;
-
-        }
-
-        catch (error) {
-
-            return null;
-
-        }
+        return parseInt(id);
 
     }
+
 
     return null;
+
 }
 
 
+
 // =====================================================
-// GET USER DATA
+// GET USER
 // =====================================================
 
 async function getUser() {
 
     const userId =
         getUserId();
+
 
     if (!userId) {
 
@@ -465,12 +540,16 @@ async function getUser() {
 
             localStorage.setItem(
                 "mindcare_user",
-                JSON.stringify(result.user)
+                JSON.stringify(
+                    result.user
+                )
             );
+
 
             return result.user;
 
         }
+
 
         return null;
 
@@ -483,142 +562,9 @@ async function getUser() {
         return null;
 
     }
-}
-
-
-// =====================================================
-// LOAD USER DATA
-// =====================================================
-
-async function loadUserData() {
-
-    const user =
-        await getUser();
-
-    if (!user) {
-
-        return;
-
-    }
-
-
-    // Common element IDs
-
-    setElementValue(
-        "userName",
-        user.name
-    );
-
-    setElementValue(
-        "name",
-        user.name
-    );
-
-    setElementValue(
-        "age",
-        user.age
-    );
-
-    setElementValue(
-        "gender",
-        user.gender
-    );
-
-    setElementValue(
-        "location",
-        user.location
-    );
-
-    setElementValue(
-        "favoriteSport",
-        user.favorite_sport
-    );
-
-    setElementValue(
-        "favoriteMovie",
-        user.favorite_movie
-    );
-
-    setElementValue(
-        "favoriteAnime",
-        user.favorite_anime
-    );
-
-    setElementValue(
-        "favoriteMusic",
-        user.favorite_music
-    );
-
-    setElementValue(
-        "favoriteFood",
-        user.favorite_food
-    );
-
-    setElementValue(
-        "hobbies",
-        user.hobbies
-    );
-
-
-    setElementText(
-        "gamesCompleted",
-        user.games_completed
-    );
-
-    setElementText(
-        "memoryScore",
-        user.memory_score
-    );
-
-    setElementText(
-        "attentionScore",
-        user.attention_score
-    );
-
-    setElementText(
-        "recallScore",
-        user.recall_score
-    );
 
 }
 
-
-// =====================================================
-// SET INPUT VALUE
-// =====================================================
-
-function setElementValue(id, value) {
-
-    const element =
-        document.getElementById(id);
-
-    if (element) {
-
-        element.value =
-            value ?? "";
-
-    }
-
-}
-
-
-// =====================================================
-// SET TEXT
-// =====================================================
-
-function setElementText(id, value) {
-
-    const element =
-        document.getElementById(id);
-
-    if (element) {
-
-        element.textContent =
-            value ?? "";
-
-    }
-
-}
 
 
 // =====================================================
@@ -630,9 +576,10 @@ async function updateProfile() {
     const userId =
         getUserId();
 
+
     if (!userId) {
 
-        showMessage(
+        alert(
             "Please login first."
         );
 
@@ -646,34 +593,46 @@ async function updateProfile() {
         user_id: userId,
 
         name:
-            getValue("name"),
+            getInputValue("name"),
 
         age:
-            getValue("age"),
+            getInputValue("age"),
 
         gender:
-            getValue("gender"),
+            getInputValue("gender"),
 
         location:
-            getValue("location"),
+            getInputValue("location"),
 
         favorite_sport:
-            getValue("favoriteSport"),
+            getInputValue(
+                "favoriteSport"
+            ),
 
         favorite_movie:
-            getValue("favoriteMovie"),
+            getInputValue(
+                "favoriteMovie"
+            ),
 
         favorite_anime:
-            getValue("favoriteAnime"),
+            getInputValue(
+                "favoriteAnime"
+            ),
 
         favorite_music:
-            getValue("favoriteMusic"),
+            getInputValue(
+                "favoriteMusic"
+            ),
 
         favorite_food:
-            getValue("favoriteFood"),
+            getInputValue(
+                "favoriteFood"
+            ),
 
         hobbies:
-            getValue("hobbies")
+            getInputValue(
+                "hobbies"
+            )
 
     };
 
@@ -690,18 +649,15 @@ async function updateProfile() {
 
         if (result.success) {
 
-            showMessage(
-                "Patient profile saved successfully.",
-                true
+            alert(
+                "Profile updated successfully."
             );
-
-            await loadUserData();
 
         }
 
         else {
 
-            showMessage(
+            alert(
                 result.message ||
                 "Profile update failed."
             );
@@ -712,7 +668,7 @@ async function updateProfile() {
 
     catch (error) {
 
-        showMessage(
+        alert(
             "Cannot connect to server."
         );
 
@@ -721,14 +677,16 @@ async function updateProfile() {
 }
 
 
+
 // =====================================================
 // GET INPUT VALUE
 // =====================================================
 
-function getValue(id) {
+function getInputValue(id) {
 
     const element =
         document.getElementById(id);
+
 
     if (!element) {
 
@@ -736,9 +694,11 @@ function getValue(id) {
 
     }
 
+
     return element.value.trim();
 
 }
+
 
 
 // =====================================================
@@ -755,6 +715,7 @@ async function updateMemory(
     const userId =
         getUserId();
 
+
     if (!userId) {
 
         return;
@@ -764,35 +725,17 @@ async function updateMemory(
 
     try {
 
-        const result =
-            await apiRequest(
-                "/update-memory",
-                "POST",
-                {
-                    user_id: userId,
-                    name: name,
-                    food: food,
-                    place: place,
-                    hobby: hobby
-                }
-            );
-
-
-        if (result.success) {
-
-            console.log(
-                "Memory saved successfully."
-            );
-
-        }
-
-        else {
-
-            console.error(
-                result.message
-            );
-
-        }
+        await apiRequest(
+            "/update-memory",
+            "POST",
+            {
+                user_id: userId,
+                name: name,
+                food: food,
+                place: place,
+                hobby: hobby
+            }
+        );
 
     }
 
@@ -808,8 +751,9 @@ async function updateMemory(
 }
 
 
+
 // =====================================================
-// SAVE SCORE
+// UPDATE SCORE
 // =====================================================
 
 async function updateScore(
@@ -821,11 +765,8 @@ async function updateScore(
     const userId =
         getUserId();
 
-    if (!userId) {
 
-        console.error(
-            "User not logged in."
-        );
+    if (!userId) {
 
         return;
 
@@ -834,34 +775,16 @@ async function updateScore(
 
     try {
 
-        const result =
-            await apiRequest(
-                "/update-score",
-                "POST",
-                {
-                    user_id: userId,
-                    memory: memory,
-                    attention: attention,
-                    recall: recall
-                }
-            );
-
-
-        if (result.success) {
-
-            console.log(
-                "Score saved successfully."
-            );
-
-        }
-
-        else {
-
-            console.error(
-                result.message
-            );
-
-        }
+        await apiRequest(
+            "/update-score",
+            "POST",
+            {
+                user_id: userId,
+                memory: memory,
+                attention: attention,
+                recall: recall
+            }
+        );
 
     }
 
@@ -877,6 +800,7 @@ async function updateScore(
 }
 
 
+
 // =====================================================
 // AI RECOMMENDATION
 // =====================================================
@@ -889,6 +813,7 @@ async function getRecommendation(
 
     const userId =
         getUserId();
+
 
     if (!userId) {
 
@@ -914,10 +839,6 @@ async function getRecommendation(
 
         if (result.success) {
 
-            displayRecommendation(
-                result
-            );
-
             return result;
 
         }
@@ -930,7 +851,7 @@ async function getRecommendation(
     catch (error) {
 
         console.error(
-            "Recommendation error:",
+            "AI recommendation error:",
             error
         );
 
@@ -941,86 +862,9 @@ async function getRecommendation(
 }
 
 
-// =====================================================
-// DISPLAY AI RECOMMENDATION
-// =====================================================
-
-function displayRecommendation(result) {
-
-    let activityElement =
-        document.getElementById(
-            "recommendation"
-        );
-
-    let reasonElement =
-        document.getElementById(
-            "recommendationReason"
-        );
-
-
-    if (activityElement) {
-
-        activityElement.textContent =
-            result.activity || "";
-
-    }
-
-
-    if (reasonElement) {
-
-        reasonElement.textContent =
-            result.reason || "";
-
-    }
-
-}
-
 
 // =====================================================
-// LOGOUT
-// =====================================================
-
-function logout() {
-
-    localStorage.removeItem(
-        "mindcare_user"
-    );
-
-    localStorage.removeItem(
-        "user_id"
-    );
-
-    window.location.href =
-        "Index.html";
-
-}
-
-
-// =====================================================
-// PROTECT DASHBOARD
-// =====================================================
-
-function checkLogin() {
-
-    const userId =
-        getUserId();
-
-    if (!userId) {
-
-        window.location.href =
-            "Index.html";
-
-        return false;
-
-    }
-
-    return true;
-
-}
-
-
-// =====================================================
-// BUTTON EVENT HANDLING
+// PAGE LOADED
 // =====================================================
 
 document.addEventListener(
@@ -1028,128 +872,168 @@ document.addEventListener(
     function () {
 
         console.log(
-            "MindCare connected to:",
+            "MindCare API:",
             API_URL
         );
 
 
-        // -----------------------------
-        // LOGIN BUTTON
-        // -----------------------------
+        // =========================================
+        // CREATE ACCOUNT BUTTON
+        // =========================================
 
-        const buttons =
-            document.querySelectorAll(
-                "button"
+        const createAccountButton =
+            document.getElementById(
+                "createAccountButton"
             );
 
 
-        buttons.forEach(function (button) {
+        if (createAccountButton) {
 
-            const text =
-                button.textContent
-                    .trim()
-                    .toLowerCase();
+            createAccountButton.addEventListener(
+                "click",
+                function () {
+
+                    showRegister();
+
+                }
+            );
+
+        }
 
 
-            if (text === "login") {
 
-                button.addEventListener(
-                    "click",
-                    function (event) {
+        // =========================================
+        // BACK TO LOGIN
+        // =========================================
 
-                        event.preventDefault();
+        const backToLoginButton =
+            document.getElementById(
+                "backToLoginButton"
+            );
+
+
+        if (backToLoginButton) {
+
+            backToLoginButton.addEventListener(
+                "click",
+                function () {
+
+                    showLogin();
+
+                }
+            );
+
+        }
+
+
+
+        // =========================================
+        // LOGIN
+        // =========================================
+
+        const loginButton =
+            document.getElementById(
+                "loginButton"
+            );
+
+
+        if (loginButton) {
+
+            loginButton.addEventListener(
+                "click",
+                function () {
+
+                    loginUser();
+
+                }
+            );
+
+        }
+
+
+
+        // =========================================
+        // REGISTER
+        // =========================================
+
+        const registerButton =
+            document.getElementById(
+                "registerButton"
+            );
+
+
+        if (registerButton) {
+
+            registerButton.addEventListener(
+                "click",
+                function () {
+
+                    registerUser();
+
+                }
+            );
+
+        }
+
+
+
+        // =========================================
+        // ENTER KEY - LOGIN
+        // =========================================
+
+        const loginPassword =
+            document.getElementById(
+                "loginPassword"
+            );
+
+
+        if (loginPassword) {
+
+            loginPassword.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (
+                        event.key === "Enter"
+                    ) {
 
                         loginUser();
 
                     }
-                );
 
-            }
+                }
+            );
 
-
-            if (
-                text === "create account" ||
-                text === "register"
-            ) {
-
-                button.addEventListener(
-                    "click",
-                    function (event) {
-
-                        event.preventDefault();
-
-                        window.location.href =
-                            "register.html";
-
-                    }
-                );
-
-            }
+        }
 
 
-            if (
-                text === "logout"
-            ) {
 
-                button.addEventListener(
-                    "click",
-                    function (event) {
+        // =========================================
+        // ENTER KEY - REGISTER
+        // =========================================
 
-                        event.preventDefault();
+        const registerPassword =
+            document.getElementById(
+                "registerPassword"
+            );
 
-                        logout();
+
+        if (registerPassword) {
+
+            registerPassword.addEventListener(
+                "keydown",
+                function (event) {
+
+                    if (
+                        event.key === "Enter"
+                    ) {
+
+                        registerUser();
 
                     }
-                );
 
-            }
-
-        });
-
-
-        // -----------------------------
-        // ENTER KEY LOGIN
-        // -----------------------------
-
-        document
-            .querySelectorAll(
-                "input"
-            )
-            .forEach(function (input) {
-
-                input.addEventListener(
-                    "keydown",
-                    function (event) {
-
-                        if (
-                            event.key === "Enter"
-                        ) {
-
-                            if (
-                                input.type === "password"
-                            ) {
-
-                                loginUser();
-
-                            }
-
-                        }
-
-                    }
-                );
-
-            });
-
-
-        // -----------------------------
-        // LOAD USER
-        // -----------------------------
-
-        if (
-            getUserId()
-        ) {
-
-            loadUserData();
+                }
+            );
 
         }
 

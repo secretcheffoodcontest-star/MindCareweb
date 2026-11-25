@@ -176,9 +176,7 @@ def register():
             "message": "Password must contain at least 4 characters."
         }), 400
 
-    password_hash = hash_password(
-        password
-    )
+    password_hash = hash_password(password)
 
     try:
 
@@ -248,9 +246,7 @@ def login():
             "message": "Please enter username and password."
         }), 400
 
-    password_hash = hash_password(
-        password
-    )
+    password_hash = hash_password(password)
 
     conn = get_db()
 
@@ -327,14 +323,16 @@ def update_profile():
 
     data = request.get_json()
 
-    user_id = data.get(
-        "user_id"
-    )
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "No data received."
+        }), 400
+
+    user_id = data.get("user_id")
 
     try:
-        age = int(
-            data.get("age", 0)
-        )
+        age = int(data.get("age", 0))
     except:
         age = 0
 
@@ -425,9 +423,13 @@ def update_memory():
 
     data = request.get_json()
 
-    user_id = data.get(
-        "user_id"
-    )
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "No data received."
+        }), 400
+
+    user_id = data.get("user_id")
 
     name = data.get(
         "name", ""
@@ -484,21 +486,28 @@ def update_score():
 
     data = request.get_json()
 
-    user_id = data.get(
-        "user_id"
-    )
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "No data received."
+        }), 400
 
-    memory = int(
-        data.get("memory", 0)
-    )
+    user_id = data.get("user_id")
 
-    attention = int(
-        data.get("attention", 0)
-    )
+    try:
+        memory = int(data.get("memory", 0))
+    except:
+        memory = 0
 
-    recall = int(
-        data.get("recall", 0)
-    )
+    try:
+        attention = int(data.get("attention", 0))
+    except:
+        attention = 0
+
+    try:
+        recall = int(data.get("recall", 0))
+    except:
+        recall = 0
 
     conn = get_db()
 
@@ -519,34 +528,20 @@ def update_score():
             "message": "User not found."
         }), 404
 
-    old_memory = user[
-        "memory_score"
-    ]
-
-    old_attention = user[
-        "attention_score"
-    ]
-
-    old_recall = user[
-        "recall_score"
-    ]
+    old_memory = user["memory_score"]
+    old_attention = user["attention_score"]
+    old_recall = user["recall_score"]
 
     new_memory = (
-        memory
-        if memory > 0
-        else old_memory
+        memory if memory > 0 else old_memory
     )
 
     new_attention = (
-        attention
-        if attention > 0
-        else old_attention
+        attention if attention > 0 else old_attention
     )
 
     new_recall = (
-        recall
-        if recall > 0
-        else old_recall
+        recall if recall > 0 else old_recall
     )
 
     conn.execute("""
@@ -588,21 +583,28 @@ def recommend():
 
     data = request.get_json()
 
-    user_id = data.get(
-        "user_id"
-    )
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "No data received."
+        }), 400
 
-    memory = int(
-        data.get("memory", 0)
-    )
+    user_id = data.get("user_id")
 
-    attention = int(
-        data.get("attention", 0)
-    )
+    try:
+        memory = int(data.get("memory", 0))
+    except:
+        memory = 0
 
-    recall = int(
-        data.get("recall", 0)
-    )
+    try:
+        attention = int(data.get("attention", 0))
+    except:
+        attention = 0
+
+    try:
+        recall = int(data.get("recall", 0))
+    except:
+        recall = 0
 
     conn = get_db()
 
@@ -631,59 +633,31 @@ def recommend():
         ]
     ])[0]
 
-    sport = user[
-        "favorite_sport"
-    ]
-
-    movie = user[
-        "favorite_movie"
-    ]
-
-    anime = user[
-        "favorite_anime"
-    ]
-
-    music = user[
-        "favorite_music"
-    ]
-
-    food = user[
-        "favorite_food"
-    ]
-
-    hobbies = user[
-        "hobbies"
-    ]
-
-
-    # =========================
-    # PERSONALIZED ACTIVITY
-    # =========================
+    sport = user["favorite_sport"]
+    movie = user["favorite_movie"]
+    anime = user["favorite_anime"]
+    music = user["favorite_music"]
+    food = user["favorite_food"]
+    hobbies = user["hobbies"]
 
     if sport != "":
 
         if "cricket" in sport.lower():
 
-            activity = (
-                "🏏 Cricket Memory Challenge"
-            )
+            activity = "🏏 Cricket Memory Challenge"
 
             reason = (
-                "This activity combines memory "
-                "practice with the patient's "
-                "interest in cricket."
+                "This activity combines memory practice "
+                "with the patient's interest in cricket."
             )
 
         elif "football" in sport.lower():
 
-            activity = (
-                "⚽ Football Memory Challenge"
-            )
+            activity = "⚽ Football Memory Challenge"
 
             reason = (
                 "This activity uses football-related "
-                "content to make cognitive practice "
-                "more engaging."
+                "content to make cognitive practice more engaging."
             )
 
         else:
@@ -695,48 +669,40 @@ def recommend():
             )
 
             reason = (
-                "This activity is personalized "
-                "using the patient's favorite sport."
+                "This activity is personalized using "
+                "the patient's favorite sport."
             )
 
     elif anime != "":
 
-        activity = (
-            "🍥 Anime Character Memory"
-        )
+        activity = "🍥 Anime Character Memory"
 
         reason = (
-            "This activity uses anime-related "
-            "content based on the patient's interests."
+            "This activity uses anime-related content "
+            "based on the patient's interests."
         )
 
     elif movie != "":
 
-        activity = (
-            "🎬 Movie Memory Challenge"
-        )
+        activity = "🎬 Movie Memory Challenge"
 
         reason = (
-            "This activity uses movie-related "
-            "content to make cognitive practice familiar."
+            "This activity uses movie-related content "
+            "to make cognitive practice familiar."
         )
 
     elif music != "":
 
-        activity = (
-            "🎵 Music Memory Challenge"
-        )
+        activity = "🎵 Music Memory Challenge"
 
         reason = (
-            "This activity uses music-related "
-            "content based on the patient's interests."
+            "This activity uses music-related content "
+            "based on the patient's interests."
         )
 
     elif food != "":
 
-        activity = (
-            "🍎 Food Memory Challenge"
-        )
+        activity = "🍎 Food Memory Challenge"
 
         reason = (
             "This activity uses familiar food-related "
@@ -760,9 +726,7 @@ def recommend():
 
         if prediction == 0:
 
-            activity = (
-                "🧠 Memory Game"
-            )
+            activity = "🧠 Memory Game"
 
             reason = (
                 "Memory performance can be supported "
@@ -771,9 +735,7 @@ def recommend():
 
         elif prediction == 1:
 
-            activity = (
-                "🔢 Number Sequence"
-            )
+            activity = "🔢 Number Sequence"
 
             reason = (
                 "Attention performance can be supported "
@@ -782,15 +744,12 @@ def recommend():
 
         else:
 
-            activity = (
-                "🧩 Memory Recall"
-            )
+            activity = "🧩 Memory Recall"
 
             reason = (
                 "Recall activities are recommended "
                 "based on current performance."
             )
-
 
     return jsonify({
         "success": True,

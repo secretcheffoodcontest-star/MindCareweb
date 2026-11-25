@@ -1,615 +1,478 @@
-"use strict";
+// =====================================================
+// MINDCARE - FRONTEND JAVASCRIPT
+// Render Production Version
+// =====================================================
 
-/*
-    IMPORTANT
-
-    Keep this empty.
-
-    When deployed online, the browser will automatically
-    use the same website address for Flask.
-*/
-
-const SERVER = "";
-
-let currentUser = null;
-
-let memoryScore = 0;
-let attentionScore = 0;
-let recallScore = 0;
+// IMPORTANT:
+// Do NOT use localhost or 127.0.0.1 here.
+// This is your live Flask server.
+const API_URL = "https://mindcareweb-f2qa.onrender.com";
 
 
-/* =========================
-   SHOW PAGE
-========================= */
+// =====================================================
+// HELPER FUNCTION
+// =====================================================
 
-function showPage(pageId) {
-
-    const authPages =
-        document.querySelectorAll(".auth-page");
-
-    authPages.forEach(function (page) {
-        page.classList.remove("active");
-    });
-
-
-    const pages =
-        document.querySelectorAll(".page");
-
-    pages.forEach(function (page) {
-        page.classList.remove("active");
-    });
-
-
-    if (pageId === "login-page") {
-
-        document
-            .getElementById("login-page")
-            .classList.add("active");
-
-        document
-            .getElementById("main-app")
-            .classList.add("hidden");
-
-        return;
-    }
-
-
-    if (pageId === "register-page") {
-
-        document
-            .getElementById("register-page")
-            .classList.add("active");
-
-        document
-            .getElementById("main-app")
-            .classList.add("hidden");
-
-        return;
-    }
-
-
-    document
-        .getElementById("main-app")
-        .classList.remove("hidden");
-
-
-    const selectedPage =
-        document.getElementById(pageId);
-
-    if (selectedPage) {
-        selectedPage.classList.add("active");
-    }
-}
-
-
-/* =========================
-   REGISTER
-========================= */
-
-async function registerUser() {
-
-    console.log("Register button clicked");
-
-    const name =
-        document
-            .getElementById("registerName")
-            .value
-            .trim();
-
-    const username =
-        document
-            .getElementById("registerUsername")
-            .value
-            .trim();
-
-    const password =
-        document
-            .getElementById("registerPassword")
-            .value
-            .trim();
-
-    const message =
-        document.getElementById(
-            "registerMessage"
-        );
-
-
-    if (
-        name === "" ||
-        username === "" ||
-        password === ""
-    ) {
-
-        message.textContent =
-            "Please fill all fields.";
-
-        message.style.color = "red";
-
-        return;
-    }
-
-
-    if (password.length < 4) {
-
-        message.textContent =
-            "Password must contain at least 4 characters.";
-
-        message.style.color = "red";
-
-        return;
-    }
-
-
-    message.textContent =
-        "Creating account...";
-
-    message.style.color =
-        "#1769aa";
-
+async function apiRequest(endpoint, method = "GET", data = null) {
 
     try {
 
-        const response =
-            await fetch(
-                SERVER + "/register",
-                {
-                    method: "POST",
+        const options = {
+            method: method,
+            headers: {
+                "Content-Type": "application/json"
+            }
+        };
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            name: name,
-                            username: username,
-                            password: password
-                        })
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !response.ok ||
-            !data.success
-        ) {
-
-            message.textContent =
-                data.message ||
-                "Registration failed.";
-
-            message.style.color =
-                "red";
-
-            return;
+        if (data !== null) {
+            options.body = JSON.stringify(data);
         }
 
-
-        message.textContent =
-            "Account created successfully!";
-
-        message.style.color =
-            "green";
-
-
-        alert(
-            "Account created successfully!"
+        const response = await fetch(
+            API_URL + endpoint,
+            options
         );
 
+        const result = await response.json();
 
-        document
-            .getElementById(
-                "registerName"
-            )
-            .value = "";
+        return result;
 
-        document
-            .getElementById(
-                "registerUsername"
-            )
-            .value = "";
+    } catch (error) {
 
-        document
-            .getElementById(
-                "registerPassword"
-            )
-            .value = "";
+        console.error("API Error:", error);
 
-
-        showPage("login-page");
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Registration error:",
-            error
-        );
-
-        message.textContent =
-            "Cannot connect to MindCare server.";
-
-        message.style.color =
-            "red";
-
-        alert(
-            "Cannot connect to MindCare server.\n\nMake sure app.py is running."
+        throw new Error(
+            "Cannot connect to server."
         );
     }
 }
 
 
-/* =========================
-   LOGIN
-========================= */
+// =====================================================
+// SHOW MESSAGE
+// =====================================================
+
+function showMessage(message, success = false) {
+
+    let messageElement =
+        document.getElementById("message");
+
+    if (!messageElement) {
+
+        messageElement =
+            document.querySelector(".message");
+
+    }
+
+    if (!messageElement) {
+
+        alert(message);
+        return;
+
+    }
+
+    messageElement.textContent = message;
+
+    if (success) {
+
+        messageElement.style.color = "green";
+
+    } else {
+
+        messageElement.style.color = "red";
+
+    }
+}
+
+
+// =====================================================
+// LOGIN
+// =====================================================
 
 async function loginUser() {
 
-    const username =
-        document
-            .getElementById(
-                "loginUsername"
-            )
-            .value
-            .trim();
+    const inputs =
+        document.querySelectorAll("input");
 
-    const password =
-        document
-            .getElementById(
-                "loginPassword"
-            )
-            .value
-            .trim();
+    let usernameInput = null;
+    let passwordInput = null;
 
-    const message =
-        document.getElementById(
-            "loginMessage"
-        );
+    inputs.forEach(function (input) {
 
+        if (input.type === "password") {
 
-    if (
-        username === "" ||
-        password === ""
-    ) {
+            passwordInput = input;
 
-        message.textContent =
-            "Please enter username and password.";
+        }
 
-        message.style.color =
-            "red";
-
-        return;
-    }
-
-
-    message.textContent =
-        "Logging in...";
-
-    message.style.color =
-        "#1769aa";
-
-
-    try {
-
-        const response =
-            await fetch(
-                SERVER + "/login",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-                            username:
-                                username,
-
-                            password:
-                                password
-                        })
-                }
-            );
-
-
-        const data =
-            await response.json();
-
-
-        if (
-            !response.ok ||
-            !data.success
+        else if (
+            input.type === "text" ||
+            input.type === "email"
         ) {
 
-            message.textContent =
-                data.message ||
-                "Invalid login.";
+            if (!usernameInput) {
 
-            message.style.color =
-                "red";
+                usernameInput = input;
 
-            return;
+            }
+
         }
 
-
-        currentUser =
-            data.user;
+    });
 
 
-        localStorage.setItem(
-            "mindcareUserId",
-            currentUser.id
+    if (!usernameInput || !passwordInput) {
+
+        showMessage(
+            "Username or password field not found."
         );
 
-
-        message.textContent =
-            "Login successful.";
-
-        message.style.color =
-            "green";
-
-
-        loadUserData();
-
-        showPage("home-page");
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Login error:",
-            error
-        );
-
-        message.textContent =
-            "Cannot connect to server.";
-
-        message.style.color =
-            "red";
-    }
-}
-
-
-/* =========================
-   LOAD USER
-========================= */
-
-async function loadUserData() {
-
-    if (!currentUser) {
         return;
+
+    }
+
+
+    const username =
+        usernameInput.value.trim();
+
+    const password =
+        passwordInput.value.trim();
+
+
+    if (username === "" || password === "") {
+
+        showMessage(
+            "Please enter username and password."
+        );
+
+        return;
+
     }
 
 
     try {
 
-        const response =
-            await fetch(
-                SERVER +
-                "/user/" +
-                currentUser.id
-            );
+        showMessage("Logging in...");
 
 
-        const data =
-            await response.json();
-
-
-        if (!data.success) {
-            return;
-        }
-
-
-        currentUser =
-            data.user;
-
-
-        document.getElementById(
-            "patientName"
-        ).value =
-            currentUser.name || "";
-
-
-        document.getElementById(
-            "patientAge"
-        ).value =
-            currentUser.age || "";
-
-
-        document.getElementById(
-            "patientGender"
-        ).value =
-            currentUser.gender || "";
-
-
-        document.getElementById(
-            "patientLocation"
-        ).value =
-            currentUser.location || "";
-
-
-        document.getElementById(
-            "favoriteSport"
-        ).value =
-            currentUser.favorite_sport || "";
-
-
-        document.getElementById(
-            "favoriteMovie"
-        ).value =
-            currentUser.favorite_movie || "";
-
-
-        document.getElementById(
-            "favoriteAnime"
-        ).value =
-            currentUser.favorite_anime || "";
-
-
-        document.getElementById(
-            "favoriteMusic"
-        ).value =
-            currentUser.favorite_music || "";
-
-
-        document.getElementById(
-            "favoriteFood"
-        ).value =
-            currentUser.favorite_food || "";
-
-
-        document.getElementById(
-            "patientHobbies"
-        ).value =
-            currentUser.hobbies || "";
-
-
-        updateDashboard();
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Could not load user:",
-            error
+        const result = await apiRequest(
+            "/login",
+            "POST",
+            {
+                username: username,
+                password: password
+            }
         );
-    }
-}
-
-
-/* =========================
-   SAVE PROFILE
-========================= */
-
-async function savePatientProfile() {
-
-    if (!currentUser) {
-
-        alert("Please login first.");
-
-        return;
-    }
-
-
-    const data = {
-
-        user_id:
-            currentUser.id,
-
-        name:
-            document.getElementById(
-                "patientName"
-            ).value.trim(),
-
-        age:
-            document.getElementById(
-                "patientAge"
-            ).value,
-
-        gender:
-            document.getElementById(
-                "patientGender"
-            ).value,
-
-        location:
-            document.getElementById(
-                "patientLocation"
-            ).value.trim(),
-
-        favorite_sport:
-            document.getElementById(
-                "favoriteSport"
-            ).value.trim(),
-
-        favorite_movie:
-            document.getElementById(
-                "favoriteMovie"
-            ).value.trim(),
-
-        favorite_anime:
-            document.getElementById(
-                "favoriteAnime"
-            ).value.trim(),
-
-        favorite_music:
-            document.getElementById(
-                "favoriteMusic"
-            ).value.trim(),
-
-        favorite_food:
-            document.getElementById(
-                "favoriteFood"
-            ).value.trim(),
-
-        hobbies:
-            document.getElementById(
-                "patientHobbies"
-            ).value.trim()
-    };
-
-
-    try {
-
-        const response =
-            await fetch(
-                SERVER +
-                "/update-profile",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify(data)
-                }
-            );
-
-
-        const result =
-            await response.json();
-
-
-        const message =
-            document.getElementById(
-                "profileMessage"
-            );
 
 
         if (result.success) {
 
-            message.textContent =
-                "Patient profile saved successfully.";
+            // Save logged-in user
+            localStorage.setItem(
+                "mindcare_user",
+                JSON.stringify(result.user)
+            );
 
-            message.style.color =
-                "green";
+            localStorage.setItem(
+                "user_id",
+                result.user.id
+            );
 
 
-            loadUserData();
+            showMessage(
+                "Login successful.",
+                true
+            );
+
+
+            // Redirect to dashboard
+            window.location.href =
+                "dashboard.html";
 
         }
 
         else {
 
-            message.textContent =
+            showMessage(
                 result.message ||
-                "Could not save profile.";
+                "Invalid username or password."
+            );
 
-            message.style.color =
-                "red";
         }
+
+    }
+
+    catch (error) {
+
+        showMessage(
+            "Cannot connect to server."
+        );
+
+        console.error(error);
+
+    }
+}
+
+
+// =====================================================
+// REGISTER
+// =====================================================
+
+async function registerUser() {
+
+    const inputs =
+        document.querySelectorAll("input");
+
+    let username = "";
+    let password = "";
+    let name = "";
+
+
+    inputs.forEach(function (input) {
+
+        const value =
+            input.value.trim();
+
+        const placeholder =
+            (input.placeholder || "").toLowerCase();
+
+        const nameAttr =
+            (input.name || "").toLowerCase();
+
+
+        if (
+            placeholder.includes("username") ||
+            nameAttr === "username"
+        ) {
+
+            username = value;
+
+        }
+
+        else if (
+            input.type === "password" ||
+            placeholder.includes("password") ||
+            nameAttr === "password"
+        ) {
+
+            password = value;
+
+        }
+
+        else if (
+            placeholder.includes("name") ||
+            nameAttr === "name"
+        ) {
+
+            name = value;
+
+        }
+
+    });
+
+
+    if (name === "") {
+
+        const nameInput =
+            document.querySelector(
+                'input[name="name"]'
+            );
+
+        if (nameInput) {
+
+            name = nameInput.value.trim();
+
+        }
+
+    }
+
+
+    if (username === "") {
+
+        const usernameInput =
+            document.querySelector(
+                'input[name="username"]'
+            );
+
+        if (usernameInput) {
+
+            username =
+                usernameInput.value.trim();
+
+        }
+
+    }
+
+
+    if (password === "") {
+
+        const passwordInput =
+            document.querySelector(
+                'input[name="password"]'
+            );
+
+        if (passwordInput) {
+
+            password =
+                passwordInput.value.trim();
+
+        }
+
+    }
+
+
+    if (
+        username === "" ||
+        password === "" ||
+        name === ""
+    ) {
+
+        showMessage(
+            "Please fill all required fields."
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        showMessage(
+            "Creating account..."
+        );
+
+
+        const result =
+            await apiRequest(
+                "/register",
+                "POST",
+                {
+                    username: username,
+                    password: password,
+                    name: name
+                }
+            );
+
+
+        if (result.success) {
+
+            showMessage(
+                "Registration successful. Please login.",
+                true
+            );
+
+            setTimeout(function () {
+
+                window.location.href =
+                    "Index.html";
+
+            }, 1000);
+
+        }
+
+        else {
+
+            showMessage(
+                result.message ||
+                "Registration failed."
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        showMessage(
+            "Cannot connect to server."
+        );
+
+        console.error(error);
+
+    }
+}
+
+
+// =====================================================
+// GET CURRENT USER ID
+// =====================================================
+
+function getUserId() {
+
+    const userId =
+        localStorage.getItem("user_id");
+
+    if (userId) {
+
+        return parseInt(userId);
+
+    }
+
+
+    const user =
+        localStorage.getItem("mindcare_user");
+
+    if (user) {
+
+        try {
+
+            const userData =
+                JSON.parse(user);
+
+            return userData.id;
+
+        }
+
+        catch (error) {
+
+            return null;
+
+        }
+
+    }
+
+    return null;
+}
+
+
+// =====================================================
+// GET USER DATA
+// =====================================================
+
+async function getUser() {
+
+    const userId =
+        getUserId();
+
+    if (!userId) {
+
+        return null;
+
+    }
+
+
+    try {
+
+        const result =
+            await apiRequest(
+                "/user/" + userId,
+                "GET"
+            );
+
+
+        if (result.success) {
+
+            localStorage.setItem(
+                "mindcare_user",
+                JSON.stringify(result.user)
+            );
+
+            return result.user;
+
+        }
+
+        return null;
 
     }
 
@@ -617,381 +480,450 @@ async function savePatientProfile() {
 
         console.error(error);
 
-        alert(
-            "Could not connect to server."
+        return null;
+
+    }
+}
+
+
+// =====================================================
+// LOAD USER DATA
+// =====================================================
+
+async function loadUserData() {
+
+    const user =
+        await getUser();
+
+    if (!user) {
+
+        return;
+
+    }
+
+
+    // Common element IDs
+
+    setElementValue(
+        "userName",
+        user.name
+    );
+
+    setElementValue(
+        "name",
+        user.name
+    );
+
+    setElementValue(
+        "age",
+        user.age
+    );
+
+    setElementValue(
+        "gender",
+        user.gender
+    );
+
+    setElementValue(
+        "location",
+        user.location
+    );
+
+    setElementValue(
+        "favoriteSport",
+        user.favorite_sport
+    );
+
+    setElementValue(
+        "favoriteMovie",
+        user.favorite_movie
+    );
+
+    setElementValue(
+        "favoriteAnime",
+        user.favorite_anime
+    );
+
+    setElementValue(
+        "favoriteMusic",
+        user.favorite_music
+    );
+
+    setElementValue(
+        "favoriteFood",
+        user.favorite_food
+    );
+
+    setElementValue(
+        "hobbies",
+        user.hobbies
+    );
+
+
+    setElementText(
+        "gamesCompleted",
+        user.games_completed
+    );
+
+    setElementText(
+        "memoryScore",
+        user.memory_score
+    );
+
+    setElementText(
+        "attentionScore",
+        user.attention_score
+    );
+
+    setElementText(
+        "recallScore",
+        user.recall_score
+    );
+
+}
+
+
+// =====================================================
+// SET INPUT VALUE
+// =====================================================
+
+function setElementValue(id, value) {
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+
+        element.value =
+            value ?? "";
+
+    }
+
+}
+
+
+// =====================================================
+// SET TEXT
+// =====================================================
+
+function setElementText(id, value) {
+
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+
+        element.textContent =
+            value ?? "";
+
+    }
+
+}
+
+
+// =====================================================
+// UPDATE PROFILE
+// =====================================================
+
+async function updateProfile() {
+
+    const userId =
+        getUserId();
+
+    if (!userId) {
+
+        showMessage(
+            "Please login first."
         );
+
+        return;
+
     }
-}
 
 
-/* =========================
-   MEMORY GAME
-========================= */
+    const data = {
 
-function startMemoryGame() {
+        user_id: userId,
 
-    showPage(
-        "memory-game-page"
-    );
+        name:
+            getValue("name"),
 
-    memoryScore = 0;
+        age:
+            getValue("age"),
 
-    document.getElementById(
-        "memoryContent"
-    ).style.display =
-        "block";
+        gender:
+            getValue("gender"),
 
-    document.getElementById(
-        "memoryResult"
-    ).textContent =
-        "";
-}
+        location:
+            getValue("location"),
+
+        favorite_sport:
+            getValue("favoriteSport"),
+
+        favorite_movie:
+            getValue("favoriteMovie"),
+
+        favorite_anime:
+            getValue("favoriteAnime"),
+
+        favorite_music:
+            getValue("favoriteMusic"),
+
+        favorite_food:
+            getValue("favoriteFood"),
+
+        hobbies:
+            getValue("hobbies")
+
+    };
 
 
-function checkMemoryAnswer() {
+    try {
 
-    const result =
-        document.getElementById(
-            "memoryResult"
+        const result =
+            await apiRequest(
+                "/update-profile",
+                "POST",
+                data
+            );
+
+
+        if (result.success) {
+
+            showMessage(
+                "Patient profile saved successfully.",
+                true
+            );
+
+            await loadUserData();
+
+        }
+
+        else {
+
+            showMessage(
+                result.message ||
+                "Profile update failed."
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        showMessage(
+            "Cannot connect to server."
         );
 
+    }
 
-    memoryScore = 80;
-
-
-    result.textContent =
-        "Good job! Memory activity completed.";
-
-    result.style.color =
-        "green";
-
-
-    saveScore(
-        memoryScore,
-        0,
-        0
-    );
 }
 
 
-/* =========================
-   ATTENTION GAME
-========================= */
+// =====================================================
+// GET INPUT VALUE
+// =====================================================
 
-function startAttentionGame() {
+function getValue(id) {
 
-    showPage(
-        "attention-game-page"
-    );
+    const element =
+        document.getElementById(id);
 
-    document.getElementById(
-        "numberAnswer"
-    ).value = "";
+    if (!element) {
 
-    document.getElementById(
-        "attentionResult"
-    ).textContent =
-        "";
+        return "";
+
+    }
+
+    return element.value.trim();
+
 }
 
 
-function checkNumberAnswer() {
+// =====================================================
+// UPDATE MEMORY
+// =====================================================
 
-    const answer =
-        document.getElementById(
-            "numberAnswer"
-        ).value.trim();
-
-    const result =
-        document.getElementById(
-            "attentionResult"
-        );
-
-
-    if (answer === "583921") {
-
-        attentionScore = 100;
-
-        result.textContent =
-            "Correct! Excellent attention.";
-
-        result.style.color =
-            "green";
-
-    }
-
-    else {
-
-        attentionScore = 40;
-
-        result.textContent =
-            "Good attempt. Keep practicing.";
-
-        result.style.color =
-            "#d97706";
-    }
-
-
-    saveScore(
-        0,
-        attentionScore,
-        0
-    );
-}
-
-
-/* =========================
-   RECALL GAME
-========================= */
-
-function startRecallGame() {
-
-    showPage(
-        "recall-game-page"
-    );
-
-    document.getElementById(
-        "recallAnswer"
-    ).value = "";
-
-    document.getElementById(
-        "recallResult"
-    ).textContent =
-        "";
-}
-
-
-function checkRecallAnswer() {
-
-    const answer =
-        document.getElementById(
-            "recallAnswer"
-        ).value.toLowerCase();
-
-
-    const result =
-        document.getElementById(
-            "recallResult"
-        );
-
-
-    let score = 0;
-
-
-    if (answer.includes("mango")) {
-        score += 33;
-    }
-
-    if (answer.includes("school")) {
-        score += 33;
-    }
-
-    if (answer.includes("cricket")) {
-        score += 34;
-    }
-
-
-    recallScore = score;
-
-
-    result.textContent =
-        "Recall score: " +
-        recallScore +
-        "/100";
-
-
-    if (recallScore >= 70) {
-
-        result.style.color =
-            "green";
-
-    }
-
-    else {
-
-        result.style.color =
-            "#d97706";
-    }
-
-
-    saveScore(
-        0,
-        0,
-        recallScore
-    );
-}
-
-
-/* =========================
-   SAVE SCORE
-========================= */
-
-async function saveScore(
-    memory,
-    attention,
-    recall
+async function updateMemory(
+    name,
+    food,
+    place,
+    hobby
 ) {
 
-    if (!currentUser) {
+    const userId =
+        getUserId();
+
+    if (!userId) {
+
         return;
+
     }
 
 
     try {
 
-        await fetch(
-            SERVER +
-            "/update-score",
-            {
-                method: "POST",
-
-                headers: {
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body:
-                    JSON.stringify({
-                        user_id:
-                            currentUser.id,
-
-                        memory:
-                            memory,
-
-                        attention:
-                            attention,
-
-                        recall:
-                            recall
-                    })
-            }
-        );
+        const result =
+            await apiRequest(
+                "/update-memory",
+                "POST",
+                {
+                    user_id: userId,
+                    name: name,
+                    food: food,
+                    place: place,
+                    hobby: hobby
+                }
+            );
 
 
-        loadUserData();
+        if (result.success) {
+
+            console.log(
+                "Memory saved successfully."
+            );
+
+        }
+
+        else {
+
+            console.error(
+                result.message
+            );
+
+        }
 
     }
 
     catch (error) {
 
         console.error(
-            "Score saving error:",
+            "Memory update error:",
             error
         );
+
     }
+
 }
 
 
-/* =========================
-   DASHBOARD
-========================= */
+// =====================================================
+// SAVE SCORE
+// =====================================================
 
-function updateDashboard() {
+async function updateScore(
+    memory,
+    attention,
+    recall
+) {
 
-    if (!currentUser) {
-        return;
-    }
+    const userId =
+        getUserId();
 
+    if (!userId) {
 
-    document.getElementById(
-        "gamesCompleted"
-    ).textContent =
-        currentUser.games_completed ||
-        0;
-
-
-    document.getElementById(
-        "memoryScore"
-    ).textContent =
-        currentUser.memory_score ||
-        0;
-
-
-    document.getElementById(
-        "attentionScore"
-    ).textContent =
-        currentUser.attention_score ||
-        0;
-
-
-    document.getElementById(
-        "recallScore"
-    ).textContent =
-        currentUser.recall_score ||
-        0;
-}
-
-
-/* =========================
-   AI RECOMMENDATION
-========================= */
-
-async function getRecommendation() {
-
-    if (!currentUser) {
-
-        alert(
-            "Please login first."
+        console.error(
+            "User not logged in."
         );
 
         return;
+
     }
 
 
     try {
 
-        const response =
-            await fetch(
-                SERVER +
-                "/recommend",
+        const result =
+            await apiRequest(
+                "/update-score",
+                "POST",
                 {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body:
-                        JSON.stringify({
-
-                            user_id:
-                                currentUser.id,
-
-                            memory:
-                                currentUser.memory_score ||
-                                0,
-
-                            attention:
-                                currentUser.attention_score ||
-                                0,
-
-                            recall:
-                                currentUser.recall_score ||
-                                0
-                        })
+                    user_id: userId,
+                    memory: memory,
+                    attention: attention,
+                    recall: recall
                 }
             );
 
 
-        const data =
-            await response.json();
+        if (result.success) {
 
-
-        if (data.success) {
-
-            document.getElementById(
-                "recommendation"
-            ).innerHTML = `
-                <h3>${data.activity}</h3>
-                <p>${data.reason}</p>
-            `;
-
-            showPage(
-                "dashboard-page"
+            console.log(
+                "Score saved successfully."
             );
 
         }
+
+        else {
+
+            console.error(
+                result.message
+            );
+
+        }
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Score update error:",
+            error
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// AI RECOMMENDATION
+// =====================================================
+
+async function getRecommendation(
+    memory,
+    attention,
+    recall
+) {
+
+    const userId =
+        getUserId();
+
+    if (!userId) {
+
+        return null;
+
+    }
+
+
+    try {
+
+        const result =
+            await apiRequest(
+                "/recommend",
+                "POST",
+                {
+                    user_id: userId,
+                    memory: memory,
+                    attention: attention,
+                    recall: recall
+                }
+            );
+
+
+        if (result.success) {
+
+            displayRecommendation(
+                result
+            );
+
+            return result;
+
+        }
+
+
+        return null;
 
     }
 
@@ -1001,95 +933,225 @@ async function getRecommendation() {
             "Recommendation error:",
             error
         );
+
+        return null;
+
     }
+
 }
 
 
-/* =========================
-   LOGOUT
-========================= */
+// =====================================================
+// DISPLAY AI RECOMMENDATION
+// =====================================================
 
-function logoutUser() {
+function displayRecommendation(result) {
 
-    currentUser = null;
+    let activityElement =
+        document.getElementById(
+            "recommendation"
+        );
+
+    let reasonElement =
+        document.getElementById(
+            "recommendationReason"
+        );
+
+
+    if (activityElement) {
+
+        activityElement.textContent =
+            result.activity || "";
+
+    }
+
+
+    if (reasonElement) {
+
+        reasonElement.textContent =
+            result.reason || "";
+
+    }
+
+}
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+function logout() {
 
     localStorage.removeItem(
-        "mindcareUserId"
+        "mindcare_user"
     );
 
-
-    document.getElementById(
-        "loginUsername"
-    ).value = "";
-
-    document.getElementById(
-        "loginPassword"
-    ).value = "";
-
-
-    showPage(
-        "login-page"
+    localStorage.removeItem(
+        "user_id"
     );
+
+    window.location.href =
+        "Index.html";
+
 }
 
 
-/* =========================
-   STARTUP
-========================= */
+// =====================================================
+// PROTECT DASHBOARD
+// =====================================================
+
+function checkLogin() {
+
+    const userId =
+        getUserId();
+
+    if (!userId) {
+
+        window.location.href =
+            "Index.html";
+
+        return false;
+
+    }
+
+    return true;
+
+}
+
+
+// =====================================================
+// BUTTON EVENT HANDLING
+// =====================================================
 
 document.addEventListener(
     "DOMContentLoaded",
-    async function () {
+    function () {
 
-        const savedUserId =
-            localStorage.getItem(
-                "mindcareUserId"
+        console.log(
+            "MindCare connected to:",
+            API_URL
+        );
+
+
+        // -----------------------------
+        // LOGIN BUTTON
+        // -----------------------------
+
+        const buttons =
+            document.querySelectorAll(
+                "button"
             );
 
 
-        if (savedUserId) {
+        buttons.forEach(function (button) {
 
-            try {
-
-                const response =
-                    await fetch(
-                        SERVER +
-                        "/user/" +
-                        savedUserId
-                    );
+            const text =
+                button.textContent
+                    .trim()
+                    .toLowerCase();
 
 
-                const data =
-                    await response.json();
+            if (text === "login") {
 
+                button.addEventListener(
+                    "click",
+                    function (event) {
 
-                if (data.success) {
+                        event.preventDefault();
 
-                    currentUser =
-                        data.user;
+                        loginUser();
 
-                    loadUserData();
-
-                    showPage(
-                        "home-page"
-                    );
-
-                    return;
-                }
-
-            }
-
-            catch (error) {
-
-                console.log(
-                    "No active login."
+                    }
                 );
+
             }
+
+
+            if (
+                text === "create account" ||
+                text === "register"
+            ) {
+
+                button.addEventListener(
+                    "click",
+                    function (event) {
+
+                        event.preventDefault();
+
+                        window.location.href =
+                            "register.html";
+
+                    }
+                );
+
+            }
+
+
+            if (
+                text === "logout"
+            ) {
+
+                button.addEventListener(
+                    "click",
+                    function (event) {
+
+                        event.preventDefault();
+
+                        logout();
+
+                    }
+                );
+
+            }
+
+        });
+
+
+        // -----------------------------
+        // ENTER KEY LOGIN
+        // -----------------------------
+
+        document
+            .querySelectorAll(
+                "input"
+            )
+            .forEach(function (input) {
+
+                input.addEventListener(
+                    "keydown",
+                    function (event) {
+
+                        if (
+                            event.key === "Enter"
+                        ) {
+
+                            if (
+                                input.type === "password"
+                            ) {
+
+                                loginUser();
+
+                            }
+
+                        }
+
+                    }
+                );
+
+            });
+
+
+        // -----------------------------
+        // LOAD USER
+        // -----------------------------
+
+        if (
+            getUserId()
+        ) {
+
+            loadUserData();
+
         }
 
-
-        showPage(
-            "login-page"
-        );
     }
 );

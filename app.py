@@ -104,7 +104,7 @@ def home():
         os.path.dirname(
             os.path.abspath(__file__)
         ),
-        "index.html"
+        "Index.html"
     )
 
 
@@ -115,7 +115,7 @@ def style_css():
         os.path.dirname(
             os.path.abspath(__file__)
         ),
-        "style.css"
+        "Style.css"
     )
 
 
